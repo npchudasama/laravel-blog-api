@@ -9,7 +9,8 @@ use App\Http\Controllers\API\AuthController;
 Route::post('login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('blogs', [BlogController::class, 'store']);
-    Route::get('blogs', [BlogController::class, 'index']);
+    
+    Route::match(['get', 'post'], 'blogs', [BlogController::class, 'index']);
     Route::put('blogs/{id}', [BlogController::class, 'update']);
     Route::delete('blogs/{id}', [BlogController::class, 'destroy']);
    Route::get('blogs/{id}', [BlogController::class, 'show']);

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API;
 
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Blog;
@@ -10,32 +11,43 @@ use Illuminate\Support\Facades\Storage;
 class BlogController extends Controller
 {
     
-   public function index(Request $request)
+public function index(Request $request)
 {
     $query = Blog::withCount('likes')->with('user');
 
-    if ($search = $request->search) {
-        $query->where(function ($q) use ($search) {
-            $q->where('title', 'like', "%$search%")
-              ->orWhere('description', 'like', "%$search%");
+    
+    if ($request->search) {
+        $searchTerm = $request->search;
+        $query->where(function ($q) use ($searchTerm) {
+            $q->where('title', 'like', "%{$searchTerm}%")
+              ->orWhere('description', 'like', "%{$searchTerm}%");
         });
     }
 
-    if ($request->sort == 'likes') {
-        $query->orderByDesc('likes_count');
-    } else {
+    
+    if ($request->filter == 'most_liked') {
+        $query->orderBy('likes_count', 'desc');
+    }
+    elseif ($request->filter == 'latest') {
         $query->latest();
     }
 
-    $blogs = $query->paginate(10);
+    
+    $blogs = $query->paginate(5);
 
+    
     $blogs->getCollection()->transform(function ($blog) {
-        $blog->liked_by_me = $blog->likes()->where('user_id', auth()->id())->exists();
+        $blog->liked_by_user = $blog->likes->where('user_id', Auth::id())->count() > 0;
         return $blog;
     });
 
     return response()->json($blogs);
 }
+
+
+
+
+
 
     
     public function store(Request $request)
